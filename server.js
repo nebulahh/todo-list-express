@@ -7,7 +7,7 @@ require('dotenv').config()
 
 let db,
     dbConnectionStr = process.env.DB_STRING,
-    dbName = 'todo'
+    dbName = 'contacts'
 
 MongoClient.connect(dbConnectionStr, { useUnifiedTopology: true })
     .then(client => {
@@ -22,9 +22,10 @@ app.use(express.json())
 
 
 app.get('/',async (request, response)=>{
-    const todoItems = await db.collection('todos').find().toArray()
-    const itemsLeft = await db.collection('todos').countDocuments({completed: false})
-    response.render('index.ejs', { items: todoItems, left: itemsLeft })
+    const contact = await db.collection('contacts').find().toArray()
+    // const itemsLeft = await db.collection('contacts').countDocuments({completed: false})
+    // response.render('index.ejs', { contacts: todoItems, left: itemsLeft })
+    response.render('index.ejs', { person: contact })
     // db.collection('todos').find().toArray()
     // .then(data => {
     //     db.collection('todos').countDocuments({completed: false})
@@ -35,29 +36,36 @@ app.get('/',async (request, response)=>{
     // .catch(error => console.error(error))
 })
 
-app.post('/addTodo', (request, response) => {
-    db.collection('todos').insertOne({thing: request.body.todoItem, completed: false})
+app.get('/editContact', async (req, res) => {
+    const contact = await db.collection('contacts').find({ name: req.body.name })
+    res.render('index.ejs', { tel: contact })
+})
+
+app.post('/addContact', (request, response) => {
+    const body = request.body
+    db.collection('contacts').insertOne({name: body.name, telNum: body.telNum, email: body.email})
     .then(result => {
-        console.log('Todo Added')
+        console.log(request.body)
         response.redirect('/')
     })
     .catch(error => console.error(error))
 })
 
-app.put('/markComplete', (request, response) => {
-    db.collection('todos').updateOne({thing: request.body.itemFromJS},{
-        $set: {
-            completed: true
-          }
-    },{
-        sort: {_id: -1},
-        upsert: false
-    })
-    .then(result => {
-        console.log('Marked Complete')
-        response.json('Marked Complete')
-    })
-    .catch(error => console.error(error))
+app.put('/jh', (request, response) => {
+    // db.collection('contacts').updateOne({thing: request.body.itemFromJS},{
+    //     $set: {
+    //         completed: true
+    //       }
+    // },{
+    //     sort: {_id: -1},
+    //     upsert: false
+    // })
+    // .then(result => {
+    //     console.log('Marked Complete')
+    //     response.json('Marked Complete')
+    // })
+    // .catch(error => console.error(error))
+    console.log(request.body.contactEdit);
 
 })
 
@@ -78,14 +86,13 @@ app.put('/markUnComplete', (request, response) => {
 
 })
 
-app.delete('/deleteItem', (request, response) => {
+app.delete('/deleteContact', (request, response) => {
     db.collection('todos').deleteOne({thing: request.body.itemFromJS})
     .then(result => {
         console.log('Todo Deleted')
         response.json('Todo Deleted')
     })
     .catch(error => console.error(error))
-
 })
 
 app.listen(process.env.PORT || PORT, ()=>{
